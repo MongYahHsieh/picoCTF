@@ -95,6 +95,37 @@ def get_user(name=None, uid=None, include_pw_hash=False):
     return db.users.find_one(match, projection)
 
 
+def get_users(email=None, parentemail=None, include_pw_hash=False):
+    """
+    Retrieve all users matching the given property.
+
+    Kwargs:
+        email: the user's email address
+        parentemail: the user's parent email address
+        include_pw_hash: include password hash in the dict
+    Returns:
+        Returns the corresponding user objects or None if it could not be found
+    """
+    db = api.db.get_conn()
+
+    match = {}
+    projection = {
+        '_id': 0
+    }
+    if not include_pw_hash:
+        projection['password_hash'] = 0
+
+    if email is not None:
+        match.update({'email': email})
+    elif parentemail is not None:
+        match.update({'demo.parentemail': parentemail})
+    else:
+        raise PicoException(
+            'Could not retrieve user - no argument provided', 400)
+
+    return list(db.users.find(match, projection))
+
+
 def get_all_users():
     """
     Find all users in the database.

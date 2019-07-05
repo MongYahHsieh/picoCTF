@@ -8,7 +8,7 @@ from flask_restplus import Namespace, Resource
 import api
 from api import PicoException, require_admin
 
-from .schemas import user_req
+from .schemas import user_req, user_search_req
 
 ns = Namespace('users', description='User management')
 
@@ -122,3 +122,26 @@ class UserDataExport(Resource):
             'submissions': submissions,
             'feedback': feedbacks
         })
+
+@ns.response(200, 'Success')
+@ns.response(401, 'Not logged in')
+@ns.response(403, 'Not authorized')
+@ns.response(404, 'User not found')
+@ns.route('/search')
+class UserSearch(Resource):
+    """Search for a given user."""
+
+    @require_admin
+    @ns.expect(user_search_req)
+    def post(self):
+        """Search for a given user."""        
+        req = user_search_req.parse_args(strict=True)
+
+        if req["field"] == "email":
+            user_data = api.user.get_users(email=req["query"])
+        elif req["field"] == "parentemail":
+            user_data = api.user.get_users(parentemail=req["query"])
+
+        if not user_data:
+            raise PicoException('User not found', status_code=404)
+        return jsonify(user_data)

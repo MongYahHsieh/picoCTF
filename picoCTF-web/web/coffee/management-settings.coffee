@@ -426,6 +426,58 @@ CaptchaTab = React.createClass
       </Row>
     </Well>
 
+UserSearchTab = React.createClass
+  getInitialState: ->
+    search_field: "email"
+    search_query: "email@example.com"
+
+  updateSearchField: (value) ->
+    @setState update @state,
+      $set:
+        search_field: value
+
+  updateSearchQuery: (e) ->
+    @setState update @state,
+      $set:
+        search_query: e.target.value
+
+  pushUpdates: (makeChange) ->
+    pushData = 
+      field: @state.search_field
+      query: @state.search_query
+
+    if typeof(makeChange) == "function"
+      pushData = makeChange pushData
+
+    apiCall "POST", "/api/v1/users/search", pushData
+    .success ((data) ->
+      apiNotify {"status": 1, "message": "Search request processed"}
+      alert JSON.stringify(data)
+      @props.refresh()
+    ).bind(this)
+    .error (jqXHR) ->
+      apiNotify {"status": 0, "message": jqXHR.responseJSON.message}
+
+  render: ->
+    searchFieldDescription = "The field to be searched in the user database"
+    searchQueryDescription = "The text of the query"
+
+    <Well>
+      <Row>
+        <Col sm={8}>
+          <OptionEntry name="Field" value={@state.search_field} options={["email", "parentemail"]} onChange=@updateSearchField description={searchFieldDescription}/>
+          <TextEntry name="Query" type="text" value={@state.search_query} onChange=@updateSearchQuery description={searchQueryDescription}/>
+          <Row>
+            <div className="text-center">
+              <ButtonToolbar>
+                <Button onClick={@pushUpdates}>Search</Button>
+              </ButtonToolbar>
+            </div>
+          </Row>
+        </Col>
+      </Row>
+    </Well>
+
 EligibilityTab = React.createClass
   propTypes:
     refresh: React.PropTypes.func.isRequired
@@ -560,6 +612,10 @@ SettingsTab = React.createClass
 
           <TabPane eventKey='eligibility' tab='Eligibility'>
             <EligibilityTab refresh={@refresh} eligibilitySettings={@state.settings.eligibility} key={Math.random()}/>
+          </TabPane>
+
+          <TabPane eventKey='userSearch' tab='User Search'>
+            <UserSearchTab refresh={@refresh} key={Math.random()}/>
           </TabPane>
         </TabbedArea>
       </Grid>
